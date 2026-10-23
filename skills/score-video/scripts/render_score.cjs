@@ -3,7 +3,7 @@
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),crypto=require('node:crypto');
 const {chromium}=require('playwright');
 const alpha=require('@coderline/alphatab');
-const {assertSupportedScore}=require('./render_support.cjs');
+const {assertSupportedScore,assertGraceGeometry}=require('./render_support.cjs');
 
 function options(argv){
  const o={track:0,scale:1.6,height:360,tileWidth:2048,yOffset:18,pixelsPerQuarter:120};
@@ -51,10 +51,11 @@ async function main(){
    const midi=new alphaTab.midi.MidiFile(),generator=new alphaTab.midi.MidiFileGenerator(api.score,api.settings,new alphaTab.midi.AlphaSynthMidiFileHandler(midi));generator.generate();
    return {...evidence,fontFaces:Array.from(document.fonts).map(f=>({family:f.family,status:f.status})),tempo:api.score.tempo,trackName:api.score.tracks[config.track].name,ticksPerQuarter:midi.division,tickShift:midi.tickShift,
     playbackBars:generator.tickLookup.masterBars.map(m=>({bar:m.masterBar.index+1,startTick:m.start,endTick:m.end,tempo:m.tempoChanges.map(t=>({tick:t.tick,bpm:t.tempo}))})),
-    bars:api.score.tracks[config.track].staves[0].bars.map(b=>{const mb=api.score.masterBars[b.index],bb=lookup.findMasterBar(mb);return{bar:b.index+1,startTick:mb.start,durationTick:mb.calculateDuration(),numerator:mb.timeSignatureNumerator,denominator:mb.timeSignatureDenominator,real:bounds(bb?.realBounds),line:bounds(bb?.lineAlignedBounds),beats:b.voices.flatMap(v=>v.beats.map(beat=>{const be=lookup.findBeat(beat);return{voice:v.index,index:beat.index,relativeStartTick:beat.playbackStart,durationTick:beat.playbackDuration,rest:beat.isRest,empty:beat.isEmpty,grace:beat.graceType,notes:beat.notes.length,x:be?.onNotesX,real:bounds(be?.realBounds)}}))}})
+    bars:api.score.tracks[config.track].staves[0].bars.map(b=>{const mb=api.score.masterBars[b.index],bb=lookup.findMasterBar(mb);return{bar:b.index+1,startTick:mb.start,durationTick:mb.calculateDuration(),numerator:mb.timeSignatureNumerator,denominator:mb.timeSignatureDenominator,real:bounds(bb?.realBounds),line:bounds(bb?.lineAlignedBounds),beats:b.voices.flatMap(v=>v.beats.map(beat=>{const be=lookup.findBeat(beat);return{voice:v.index,index:beat.index,relativeStartTick:beat.playbackStart,durationTick:beat.playbackDuration,rest:beat.isRest,empty:beat.isEmpty,grace:beat.graceType,notes:beat.notes.length,noteBounds:be?.notes?.map(n=>bounds(n.noteHeadBounds))||[],x:be?.onNotesX,real:bounds(be?.realBounds)}}))}})
    };
   });
   if(consoleErrors.length)throw Error(consoleErrors.join('; '));
+  const graceGeometry=assertGraceGeometry(raw.bars);
   if(!raw.fontFaces.some(f=>/alphaTab/i.test(f.family)&&f.status==='loaded'))throw Error('alphaTab font was not loaded');
   if(raw.chunks.length===0)throw Error('No rendered notation');
   if(raw.tickShift!==0)throw Error('Score playback has an initial grace-note tick shift, which is not supported');
@@ -81,7 +82,7 @@ async function main(){
   anchors.push({seconds:durationSeconds,tick:last.endTick,x:originX+last.endTick/raw.ticksPerQuarter*opt.pixelsPerQuarter,bar:last.bar,beat:null,end:true});
   if(anchors.some((a,i)=>i&&a.seconds<anchors[i-1].seconds))throw Error('Playback anchors are not chronological');
   if(anchors.some((a,i)=>i&&a.x<anchors[i-1].x))throw Error('Playback requires backward geometry movement');
-  const manifest={schemaVersion:1,engine:'alphaTab 1.8.4',layout:'continuous-horizontal',spacing:{mode:'proportional',pixelsPerQuarter:opt.pixelsPerQuarter,originX,maxAnchorErrorPixels:spacingError},sourceSha256:crypto.createHash('sha256').update(source).digest('hex'),trackIndex:opt.track,name:raw.trackName,width,height,tileWidth:opt.tileWidth,yOffset:opt.yOffset,durationSeconds,ticksPerQuarter:raw.ticksPerQuarter,tickShift:raw.tickShift,bpm:raw.tempo,tempoMap,tiles:[],anchors,barStartSeconds,staffTop:raw.bars[0].line.y+opt.yOffset,staffBottom:raw.bars[0].line.y+raw.bars[0].line.h+opt.yOffset,notes:'Native glyph positions are proportional to musical ticks, with no bitmap stretching. Coordinates refer to horizontal notation; seconds refer to the generated MIDI playback timeline. Only sequential forward playback is supported.'};
+  const manifest={schemaVersion:1,engine:'alphaTab 1.8.4',layout:'continuous-horizontal',spacing:{mode:'proportional',pixelsPerQuarter:opt.pixelsPerQuarter,originX,maxAnchorErrorPixels:spacingError},graceGeometry,sourceSha256:crypto.createHash('sha256').update(source).digest('hex'),trackIndex:opt.track,name:raw.trackName,width,height,tileWidth:opt.tileWidth,yOffset:opt.yOffset,durationSeconds,ticksPerQuarter:raw.ticksPerQuarter,tickShift:raw.tickShift,bpm:raw.tempo,tempoMap,tiles:[],anchors,barStartSeconds,staffTop:raw.bars[0].line.y+opt.yOffset,staffBottom:raw.bars[0].line.y+raw.bars[0].line.h+opt.yOffset,notes:'Native glyph positions are proportional to musical ticks, with no bitmap stretching. Coordinates refer to horizontal notation; seconds refer to the generated MIDI playback timeline. Only sequential forward playback is supported.'};
   await page.evaluate(()=>{
    document.querySelector('#score').style.visibility='hidden';
    const stage=document.createElement('div');stage.id='tile';stage.className=document.querySelector('#score .at-surface').className;stage.style.cssText='position:absolute;left:0;top:0;width:100vw;height:100vh;overflow:hidden';document.body.append(stage);

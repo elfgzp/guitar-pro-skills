@@ -47,6 +47,7 @@ and a playhead at 20% of frame width; override with `--width`, `--fps` and
 `--cursor`. Height comes from the renderer manifest. Use a new path for each
 encode. The full encode writes the MOV plus a JSON report and encode log.
 A short prototype proves appearance and encoding only, not complete coverage.
+Increase constant spacing if grace fret numbers collide; require four pixels between glyph bounds.
 
 ## Use proportional notation and a tempo-driven camera
 
@@ -72,7 +73,8 @@ spacing. Check rests, tuplets and the final interval. Require manifest
 `spacing.mode = "proportional"`; reject old nonproportional assets.
 
 Inspect repeats/jumps, swing, grace timing and simultaneous voices before a full
-render. Implement their playback-to-layout mapping explicitly or reject them with
+render. The bundled route supports the single BeforeBeat case described in the
+reference; implement other playback-to-layout mappings explicitly or reject them with
 named unsupported features. Do not silently flatten or omit them. For repeated
 playback, a single notated bar can have multiple timeline occurrences; a smooth
 scroll needs an explicit layout strategy for each occurrence.

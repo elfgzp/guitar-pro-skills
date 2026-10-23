@@ -76,6 +76,29 @@ multiple voices can have independent onset grids. The current simple route must
 reject constructs it does not implement and report them by location. Supporting
 a library's rendering of a symbol does not establish a correct scrolling clock.
 
+### Before-beat grace notes
+
+The pinned adapter supports one single-note `BeforeBeat` grace per complete group,
+borrowing exactly 120 ticks from its ordinary predecessor (TPQ 960), followed by
+an ordinary target in the same notated bar. Preserve native small fret glyphs and
+slide connections. The grace starts before its main note; its notated duration is
+zero. Do not add it as an ordinary timed beat or lengthen the bar.
+
+At a bar start, its local playback tick can be negative because it borrows from
+the previous bar. Validate non-grace notated durations per bar, then validate
+contiguous absolute playback intervals across the entire track. Summing playback
+durations separately within each notated bar incorrectly rejects this case.
+Place the grace at its real absolute tick, including across rendered SVG chunks.
+Reject negative absolute time, incomplete groups, multiple grace beats, `OnBeat`
+graces and any unproved borrowing pattern explicitly.
+
+At 120 pixels per quarter, this grace has only 15 pixels before its target.
+Inspect native fret bounds and increase the constant `--pixels-per-quarter` when
+needed; the renderer requires at least four pixels between the grace and each
+adjacent note's glyph bounds, including a predecessor in the previous bar.
+This changes visible score density and pixel speed, while musical timing remains
+unchanged. Never repair a collision by moving the grace away from its onset.
+
 Time zero is the beginning of the score's first beat, even if it contains rests.
 The default silent asset includes no soundbank, lead-in or synchronization marker.
 For a performance recording, align a known musical onset and then check later

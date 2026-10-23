@@ -108,7 +108,7 @@ python skills/score-video/scripts/encode_overlay.py output/tiles/manifest.json o
 python skills/score-video/scripts/verify_overlay.py output/overlay.mov output/tiles/manifest.json
 ```
 
-轨道索引从 0 开始；默认每四分音符 120 像素、`--scale 1.6`、1920 宽、60 FPS，画面高度来自渲染结果。拍距与符号大小分开控制，逐帧合成保留亚像素位移与透明边缘。支持范围和透明通道验证见 [视频说明](skills/score-video/references/video-formats.md)。未支持的反复／跳转、摇摆、倚音或多声部时间轴必须明确报错，不能套用固定小节时长。透明文件应解码检查 alpha；绿幕 MP4 只是可选的剪辑兼容衍生物。与真人演奏视频合成时，还需要对齐起点并检查速度漂移。
+轨道索引从 0 开始；默认每四分音符 120 像素、`--scale 1.6`、1920 宽、60 FPS，画面高度来自渲染结果。拍距与符号大小分开控制，逐帧合成保留亚像素位移与透明边缘。支持单音 `BeforeBeat` 倚音从前一音借时 120 tick，含跨小节借时；数字拥挤时应统一加宽拍距。具体边界和透明通道验证见 [视频说明](skills/score-video/references/video-formats.md)。未支持的反复／跳转、摇摆、其他倚音或多声部时间轴必须明确报错，不能套用固定小节时长。透明文件应解码检查 alpha；绿幕 MP4 只是可选的剪辑兼容衍生物。与真人演奏视频合成时，还需要对齐起点并检查速度漂移。
 
 按 skill 完成交付时，还应在产物旁生成 `使用说明.md`：填写实际文件名、规格、音频状态、BPM／变速、对齐时间点及已验证范围。提供 iMovie 绿／蓝幕素材时，说明包含叠层、去背景、裁剪、对齐和导出步骤；生成视频仍不依赖剪辑软件。可复用的[中文使用说明模板](skills/score-video/assets/usage-guide.zh-CN.md)随 skill 一起分发，由执行 skill 的模型按实际产物填写。
 

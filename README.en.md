@@ -168,7 +168,9 @@ Track indices are zero-based. Defaults are 120 pixels per quarter note,
 `--scale 1.6`, 1920 pixels wide and 60 FPS; height comes from the rendered notation.
 Temporal spacing and glyph size are independent; frame composition preserves
 subpixel movement and transparent edges. See [video formats and checks](skills/score-video/references/video-formats.md)
-for scope. Unsupported repeat/jump, swing, grace or multiple-voice timelines must
+for scope. Single-note BeforeBeat graces borrowing 120 ticks from the previous beat
+are supported, including borrowing across a barline; widen constant spacing when
+fret numbers collide. Unsupported repeat/jump, swing, other grace or multiple-voice timelines must
 fail explicitly instead of using a fixed bar duration. Validate decoded alpha;
 a green-screen MP4 is only an optional editor-compatibility derivative. Combining
 with a live performance also requires start alignment and checks for tempo drift.

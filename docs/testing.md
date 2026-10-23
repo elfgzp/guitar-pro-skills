@@ -61,6 +61,8 @@ from the automated results.
 | Low-speed movement is less than one pixel per frame | Preserve fractional translation and transparent antialiased edges; inspect successive decoded frames for integer-rounding steps and tile seams |
 | An old manifest or changed notation-engine layout lacks supported proportional geometry | Reject it explicitly and rerender; do not silently encode old engraving-width anchors |
 | A rendered score contains a repeat, jump, swing, grace or multiple voices beyond the timeline implementation | Reject with located unsupported features rather than silently generate a plausible but wrong clock |
+| A singleton BeforeBeat grace borrows time across a barline | Preserve its negative local but nonnegative absolute tick; require complete notated bars and contiguous global playback |
+| Grace and main fret numbers collide at narrow proportional spacing | Reject insufficient native glyph clearance and widen constant spacing without moving musical onsets |
 | A horizontal render splits across tiles near a slide or tie | Preserve the common coordinate space and inspect a sequence across the seam for lost marks or visual jumps |
 | The generated video matches GP timing but drifts from a performance recording | Report score timing separately and require measured performance alignment |
 | CLI passes, but source/audio were not checked | Report structural evidence only; mark source and audible playback not-run |
@@ -147,6 +149,14 @@ nonproportional manifests. Record current test results rather than treating thes
 requirements as evidence that a particular suite has passed. Unit suites run in CI without
 a browser or encoder. Run a separate local browser/FFmpeg smoke test for the
 complete pipeline:
+
+Grace tests also exercise an interior singleton BeforeBeat and a bar-start grace
+at a four-bar SVG chunk boundary. Cover malformed or incomplete groups, multiple
+graces, OnBeat timing, missing targets, overlapping playback and negative absolute
+starts. Check glyph clearance on both sides of the grace, including a predecessor
+in the previous bar; a readable target gap can still hide a left-side collision.
+Inspect native small fret glyphs and their slide connections in a browser;
+unit timing and bounding-box checks alone do not prove visible cross-chunk marks.
 
 ```sh
 # From skills/score-video, after installing its dependencies and Chromium:

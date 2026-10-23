@@ -20,6 +20,12 @@ For slides, check pitch movement and destination attacks. Equal NoteOn counts do
 not prove that a pitch bend occurred or that shift and legato were preserved.
 If the requested player cannot run, say playback was not checked and provide the available event evidence.
 Use TuxGuitar or another application when compatibility is requested; keep its results separate from the primary player.
+For a reported problem in that application, acceptance requires the affected
+notation or playback behavior there. A primary-player pass does not resolve a
+target-player failure. Report a required effect lost on import as failed for that
+requirement, even when note counts match; do not summarize it as compatible.
+If an application patch is needed, test it in isolation first and distinguish
+prepared, applied, and verified-in-the-user-application states.
 
 ## Source comparison
 

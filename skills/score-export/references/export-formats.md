@@ -60,6 +60,13 @@ tested compatibility loss. Do not add attacks, change source durations, or remov
 correct ties/dead-note markings to hide a player's limitation. Recheck these
 behaviors after upgrades.
 
+When testing cross-bar slides in a target renderer, inspect the actual line and
+both endpoint symbols. Preserved flags can still produce a short unconnected
+line if the renderer only searches the current measure. Preserve original slide
+types before repairing endpoint lookup: a boolean slide flag cannot distinguish
+a connected slide from an open-ended slide-out. Changing serialization order
+does not bypass an application's mutually exclusive note-effect model.
+
 ## Written pitch, tuning, and MusicXML
 
 A standard staff may show written pitch an octave away from sounding guitar or

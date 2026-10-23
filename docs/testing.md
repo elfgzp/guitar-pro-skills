@@ -56,6 +56,10 @@ from the automated results.
 | GP marks source guitars muted, but the target player ignores those flags | Check actual imported state and document manual audition muting; do not claim mute-state compatibility |
 | A requested transparent overlay contains a checkerboard or opaque black background | Decode pixels to verify alpha and keep the baked preview separate from the transparent master |
 | An overlay uses correct note positions but constant seconds per bar across a meter or tempo change | Derive time from ticks and tempo events, then compare boundary times independently |
+| A constant-BPM video speeds up through dense notation and slows down through rests | Render proportional tick-to-x spacing, then drive the camera from the tempo map; changing only the camera leaves the ordinary engraving out of sync |
+| A tempo event occurs inside a held note or rest | Integrate the event at its exact tick; do not average its speed across neighboring note onsets or smooth over a step change |
+| Low-speed movement is less than one pixel per frame | Preserve fractional translation and transparent antialiased edges; inspect successive decoded frames for integer-rounding steps and tile seams |
+| An old manifest or changed notation-engine layout lacks supported proportional geometry | Reject it explicitly and rerender; do not silently encode old engraving-width anchors |
 | A rendered score contains a repeat, jump, swing, grace or multiple voices beyond the timeline implementation | Reject with located unsupported features rather than silently generate a plausible but wrong clock |
 | A horizontal render splits across tiles near a slide or tie | Preserve the common coordinate space and inspect a sequence across the seam for lost marks or visual jumps |
 | The generated video matches GP timing but drifts from a performance recording | Report score timing separately and require measured performance alignment |
@@ -126,14 +130,21 @@ an automated pass.
 
 A full video check includes decoded RGBA samples over multiple backgrounds,
 start/end coverage, notation techniques and tile seams, plus independently
-checked score event times. Codec metadata alone cannot prove transparency, and
-video duration alone cannot prove intermediate synchronization. A silent video
+checked score event times. Verify every beat's proportional position and compare
+frame displacements with the integrated tempo map. Constant BPM must give constant
+camera speed through both sparse and dense notation. Tempo changes inside held
+notes or rests, meter changes, and subpixel movement need separate cases.
+Codec metadata alone cannot prove transparency, and video duration or matching
+note-onset times alone cannot prove intermediate synchronization or smooth motion. A silent video
 requires no soundbank and is not audible-playback evidence. Editor import and
 alignment to a recorded performance are separate, optional checks.
 
 The video unit suites exercise alpha-bearing frame composition, blank/opaque
 tile rejection, unequal timing intervals, input/output preservation, path safety,
-and explicit rejection of unsupported score constructs. They run in CI without
+and explicit rejection of unsupported score constructs. Proportional-layout and
+camera regressions must also cover the scenarios above, including rejection of
+nonproportional manifests. Record current test results rather than treating these
+requirements as evidence that a particular suite has passed. Unit suites run in CI without
 a browser or encoder. Run a separate local browser/FFmpeg smoke test for the
 complete pipeline:
 

@@ -1,6 +1,6 @@
 ---
 name: score-video
-description: Generate a silent, transparent, continuously scrolling notation or TAB video from a selected Guitar Pro track, with score-derived timing and a fixed playhead, without a video editor or player GUI.
+description: Generate a silent, transparent notation or TAB video from a selected Guitar Pro track, with proportional beat spacing, BPM-driven scrolling and a fixed playhead, without a video editor or player GUI.
 ---
 
 # Render a scrolling score overlay
@@ -34,19 +34,21 @@ or pass an existing compatible executable through `--chromium`.
 npm ci
 npx playwright install chromium
 python -m pip install -r requirements.txt
-node scripts/render_score.cjs --input input.gp --track 0 --output output/tiles
+node scripts/render_score.cjs --input input.gp --track 0 --output output/tiles --pixels-per-quarter 120
 python scripts/encode_overlay.py output/tiles/manifest.json output/prototype.mov --seconds 10
 python scripts/encode_overlay.py output/tiles/manifest.json output/overlay.mov
 python scripts/verify_overlay.py output/overlay.mov output/tiles/manifest.json --json output/alpha-check.json
 ```
 
-Track indices are zero-based. The encoder defaults to 1920 pixels wide, 60 FPS
+Track indices are zero-based. The renderer defaults to 120 pixels per quarter
+note and `--scale 1.6`; spacing controls horizontal time distance, while scale
+controls glyph size. The encoder defaults to 1920 pixels wide, 60 FPS
 and a playhead at 20% of frame width; override with `--width`, `--fps` and
 `--cursor`. Height comes from the renderer manifest. Use a new path for each
 encode. The full encode writes the MOV plus a JSON report and encode log.
 A short prototype proves appearance and encoding only, not complete coverage.
 
-## Keep notation and time independent
+## Use proportional notation and a tempo-driven camera
 
 Use horizontal layout and retain complete musical relationships while rendering.
 Export transparent SVG/PNG tiles with their global x/y bounds. Do not independently
@@ -54,15 +56,20 @@ render small bar ranges if doing so loses earlier tie/slide origins. Wait for th
 actual music fonts and render completion; fallback glyphs can look like missing
 notes. Do not bake a background or checkerboard into the master.
 
-Join tile-local glyph/beat coordinates to a common global coordinate space. Keep
-bar and beat identities in the manifest, rather than guessing note positions from
-regular pixel spacing. A tile boundary is a rendering detail, not a musical jump.
+Lay out beat origins at `x = origin + tick / TPQ * pixelsPerQuarter`, where TPQ
+is ticks per quarter note. Reposition musical glyphs and connections without
+stretching noteheads or text. Keep bar/beat identities and tile bounds in one
+global coordinate space. Ordinary engraving makes dense passages wider; following
+those widths causes speed changes even at constant BPM. Making only its camera
+linear loses synchronization. Regenerate notation with proportional spacing.
 
-Build playback time from score ticks and the tempo map, including meter changes,
-rests and tuplets. Use the playback tick lookup to map time to beats, then map
-beats to rendered positions. Interpolate the scroll between verified anchors;
-engraving width is not elapsed time. Never assume every bar has the same number
-of seconds, or derive the whole song from its opening BPM alone.
+Integrate the complete tempo map to locate the playback tick for each frame,
+then use the same tick-to-x formula for the camera. Within a constant-tempo
+segment, speed is `pixelsPerQuarter * BPM / 60` pixels per second. Handle tempo
+events inside held notes or rests, not just at note onsets. Do not ease or smooth
+over an intentional tempo step. Meter changes alter bar length, not quarter-note
+spacing. Check rests, tuplets and the final interval. Require manifest
+`spacing.mode = "proportional"`; reject old nonproportional assets.
 
 Inspect repeats/jumps, swing, grace timing and simultaneous voices before a full
 render. Implement their playback-to-layout mapping explicitly or reject them with
@@ -72,10 +79,10 @@ scroll needs an explicit layout strategy for each occurrence.
 
 ## Compose and encode
 
-Compose only visible tiles at each frame onto an RGBA canvas, translating their
-shared coordinates beneath the fixed playhead. Cache tiles rather than producing
-one browser screenshot per frame. Respect transparent edge pixels and inspect
-outlines/shadows against both dark and light backgrounds.
+Compose visible tiles onto an RGBA canvas beneath the fixed playhead. Cache tiles
+and retain fractional pixel motion; rounding every frame can create visible
+steps. Resampling must preserve alpha and avoid tile seams. Inspect outlines and
+shadows against both dark and light backgrounds.
 
 Encode a ProRes 4444 MOV with alpha and no audio. Confirm encoder support first;
 a `.mov` filename alone does not guarantee transparency. An opaque preview or
@@ -86,6 +93,9 @@ optional green-screen MP4 is a separately named derivative, never the master.
 - Compare the manifest's complete bar/beat coverage and playback duration with an
   independently derived score timeline. Verify variable-meter/tempo boundaries,
   rests, tuplets and the ending. Frame rounding should be at most one frame.
+- Verify beat positions against the proportional formula and per-frame movement
+  against the tempo map, including tempo changes inside a sustained note. Check
+  sparse/dense passages and subpixel motion; constant BPM must give constant speed.
 - Inspect decoded frames at the start, technique passages, tile seams and ending.
   Check fret numbers, rests, slides/ties, fonts, staff-line continuity and cropping.
 - Decode actual output pixels and prove background alpha is zero, notation alpha

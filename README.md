@@ -19,7 +19,7 @@
 | [score-arrange](skills/score-arrange/SKILL.md) | 按整小节主音优先或约定的补空模式合并吉他，保留原轨并验收 | 新编配轨、逐小节来源、差异记录 |
 | [score-export](skills/score-export/SKILL.md) | 选择 `.gp`／`.gp5` 等格式，保留信息并回读 | 导出文件、格式损失记录 |
 | [score-verify](skills/score-verify/SKILL.md) | 用 alphaTab 检查结构、渲染和播放，再比对原谱 | 分层验证报告、预览与交付清单 |
-| [score-video](skills/score-video/SKILL.md) | 将选定 GP 轨道独立生成为透明、连续横向滚动的谱面视频 | 带 alpha 的 MOV、时间轴与编码报告 |
+| [score-video](skills/score-video/SKILL.md) | 将选定 GP 轨道按等拍距排版、随 BPM 生成透明横向滚动视频 | 带 alpha 的 MOV、时间轴与编码报告 |
 
 Guitar Pro 是产品正式名称；`.gp` 与 `.gp5` 是不同代际的文件格式，不是修改扩展名就能互换。MusicXML 与 MIDI 可作为辅助交付，MIDI 不保存完整谱面和指法。格式选择见 [score-export](skills/score-export/SKILL.md)。
 
@@ -96,17 +96,19 @@ python -m http.server 8765 --bind 127.0.0.1
 
 ### 透明滚动谱视频
 
-`score-video` 从已有 GP 选择轨道，通过 alphaTab 横向渲染、节拍坐标与播放时间轴、Pillow 逐帧合成和 FFmpeg 编码，生成静音的 ProRes 4444 透明 MOV。谱面连续经过固定播放线，起点为首拍，默认没有片头或倒数；无需 iMovie、其他剪辑软件或播放器录屏。
+`score-video` 从已有 GP 选择轨道，通过 alphaTab 等拍距横向排版、完整速度时间轴、Pillow 逐帧合成和 FFmpeg 编码，生成静音的 ProRes 4444 透明 MOV。谱面连续经过固定播放线，起点为首拍，默认没有片头或倒数；无需 iMovie、其他剪辑软件或播放器录屏。
+
+每个四分音符占用固定像素距离，镜头按 BPM 推进：速度为“每拍像素数 × BPM ÷ 60”。相同 BPM 下，密集音符、长音或换拍号都不会让滚动忽快忽慢；实际变速事件仍按原谱生效，包括长音中途的变速。普通谱面按内容疏密分配宽度，不能直接拿来做匀速滚动；旧素材需要重新渲染。
 
 先按 [score-video](skills/score-video/SKILL.md) 安装该 skill 的 Node／Python 依赖、Playwright 浏览器和 FFmpeg，再在仓库根目录执行：
 
 ```sh
-node skills/score-video/scripts/render_score.cjs --input input/score.gp --track 0 --output output/tiles
+node skills/score-video/scripts/render_score.cjs --input input/score.gp --track 0 --output output/tiles --pixels-per-quarter 120
 python skills/score-video/scripts/encode_overlay.py output/tiles/manifest.json output/overlay.mov
 python skills/score-video/scripts/verify_overlay.py output/overlay.mov output/tiles/manifest.json
 ```
 
-轨道索引从 0 开始；默认 1920 宽、60 FPS，画面高度来自渲染结果。支持范围和透明通道验证见 [视频说明](skills/score-video/references/video-formats.md)。未支持的反复／跳转、摇摆、倚音或多声部时间轴必须明确报错，不能套用固定小节时长。透明文件应解码检查 alpha；绿幕 MP4 只是可选的剪辑兼容衍生物。与真人演奏视频合成时，还需要对齐起点并检查速度漂移。
+轨道索引从 0 开始；默认每四分音符 120 像素、`--scale 1.6`、1920 宽、60 FPS，画面高度来自渲染结果。拍距与符号大小分开控制，逐帧合成保留亚像素位移与透明边缘。支持范围和透明通道验证见 [视频说明](skills/score-video/references/video-formats.md)。未支持的反复／跳转、摇摆、倚音或多声部时间轴必须明确报错，不能套用固定小节时长。透明文件应解码检查 alpha；绿幕 MP4 只是可选的剪辑兼容衍生物。与真人演奏视频合成时，还需要对齐起点并检查速度漂移。
 
 ## 完整流程与验收
 

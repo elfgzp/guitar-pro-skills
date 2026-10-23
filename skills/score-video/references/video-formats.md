@@ -23,12 +23,18 @@ when compatibility is requested; importing in one editor does not certify others
 
 ## Rendering and timeline contract
 
-The exercised notation engine is alphaTab 1.8.4. Its
+The bundled notation adapter is pinned to alphaTab 1.8.4. Its
 [horizontal layout](https://docs.alphatab.net/docs/reference/types/layoutmode/)
 places bars along one long row. Preserve this continuous layout when rasterizing
 manageable tiles; splitting the source into independent page renders can lose
 cross-bar musical marks. Keep tile position, image size, beat bounds and source
 identity in a manifest so frame composition does not infer positions from pixels.
+
+The adapter uses version-specific layout internals to produce proportional
+spacing. Reject unsupported layout shapes or changed engine contracts explicitly;
+do not silently fall back to ordinary engraving. Verify fixtures and visual
+relationships before changing the dependency pin. Another notation engine is
+valid if it satisfies the same geometry, timing and transparency contract.
 
 [Rendered bounds](https://docs.alphatab.net/docs/reference/api/boundslookup) locate
 notation, while [MIDI tick lookup](https://www.alphatab.net/docs/reference/types/midi/miditicklookup/)
@@ -36,7 +42,32 @@ locates playback events. They serve different purposes. For a constant-tempo
 segment, elapsed seconds are `delta_ticks / ticks_per_quarter * 60 / BPM`; sum
 segments at every tempo event. Compare event times and total duration against an
 independent extraction, including changed meters, pickups, rests and tuplets.
-Do not use bar width or nominal note spacing as a clock.
+
+Ordinary engraving allocates more width to dense notes and technique marks. A
+camera interpolating between those note positions changes speed despite constant
+BPM; a camera moving at constant speed over that unchanged layout misses the
+notes. Instead, give every quarter note the same horizontal distance:
+
+```text
+notation x = origin + score_tick / ticks_per_quarter * pixels_per_quarter
+camera x(t) = origin + playback_tick(t) / ticks_per_quarter * pixels_per_quarter
+speed within each tempo segment = pixels_per_quarter * BPM / 60
+```
+
+The renderer defaults to `--pixels-per-quarter 120`. Its `--scale 1.6` controls
+glyph size separately, so changing temporal spacing must not horizontally stretch
+noteheads or text. Place rests, barlines and tuplet subdivisions on the same tick
+grid; retain the correct endpoints and shapes of beams, slides and ties. If dense
+notation collides, increase spacing and rerender rather than varying speed by
+engraving width. `manifest.spacing.mode` must be `"proportional"`; the encoder
+rejects older nonproportional assets, which must be rendered again.
+
+Integrate all tempo events, including events inside a held note or rest. A step
+tempo change causes a speed change at its exact time; do not smooth that change
+or interpolate only between note onsets. At constant BPM the camera moves at
+constant speed regardless of note density or meter. Keep fractional positions
+through frame composition: integer rounding causes small steps at low speeds.
+Resample transparent pixels without creating opaque edges or gaps between tiles.
 
 For repeats/jumps, first map playback occurrences to the intended visual sequence.
 A note's first notated occurrence is not its only playback time. Swing can alter
@@ -72,6 +103,11 @@ successful encode:
    Look for dropped or doubled columns, changing vertical baselines and jumps
    caused by mixing global and tile-local bounds. Check the last sounding note and
    final held/rest interval for premature cutoff.
+5. Compare every beat origin with the proportional tick grid and camera positions
+   with an independently integrated tempo map. At constant BPM, compare successive
+   frame displacements through sparse and dense passages. Include a tempo change
+   inside a held note, a meter change and movement below one pixel per frame;
+   total duration and matching note-onset times alone do not prove smooth motion.
 
 These checks establish video timing and alpha integrity for the inspected scope.
 They do not establish that the GP transcription matches an original PDF, that a

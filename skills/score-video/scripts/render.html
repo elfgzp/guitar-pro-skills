@@ -6,10 +6,12 @@ html,body{margin:0;padding:0;background:transparent;overflow:hidden}#score{width
 #score svg{filter:drop-shadow(0 1px 1.1px rgba(0,0,0,.95)) drop-shadow(1px 0 0 rgba(0,0,0,.85)) drop-shadow(-1px 0 0 rgba(0,0,0,.85))}
 </style><div id="score"></div>
 <script src="/alphaTab.js"></script>
+<script src="/proportional_layout.js"></script>
 <script>
 window.evidence={finished:false,errors:[],chunks:[]};
 (async()=>{
  const config=await(await fetch('/config')).json();window.config=config;
+ installProportionalLayout(alphaTab,config.pixelsPerQuarter);
  const api=window.api=new alphaTab.AlphaTabApi(document.querySelector('#score'),{
   core:{fontDirectory:'/fonts/',useWorkers:false,enableLazyLoading:false,includeNoteBounds:true},
   display:{layoutMode:'Horizontal',scale:config.scale,barCountPerPartial:4,padding:[42,20,42,20],resources:{mainGlyphColor:'#ffffff',secondaryGlyphColor:'#ffffff',staffLineColor:'#e7e7e7',barSeparatorColor:'#ffffff',barNumberColor:'#dedede',scoreInfoColor:'#ffffff'}},

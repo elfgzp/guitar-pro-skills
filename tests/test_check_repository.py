@@ -19,7 +19,7 @@ class PackagingTests(unittest.TestCase):
         old = checker.ROOT
         self.addCleanup(setattr, checker, 'ROOT', old)
         checker.ROOT = self.root
-        for index in range(6):
+        for index in range(8):
             folder = self.root / 'skills' / f'skill-{index}'
             folder.mkdir(parents=True)
             (folder / 'SKILL.md').write_text(

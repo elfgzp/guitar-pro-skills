@@ -29,8 +29,8 @@ def main():
         return 2
     errors = []
     skills = sorted((ROOT / 'skills').glob('*/SKILL.md'))
-    if len(skills) != 6:
-        errors.append(f'Expected 6 focused skills, found {len(skills)}')
+    if len(skills) != 8:
+        errors.append(f'Expected 8 focused skills, found {len(skills)}')
     for skill in skills:
         if skill.is_symlink() or not skill.resolve().is_relative_to(ROOT):
             errors.append(f'{skill.relative_to(ROOT)}: skill must be a repository resource file')

@@ -1,0 +1,29 @@
+<!doctype html>
+<html><meta charset="utf-8"><title>Guitar TAB overlay rendering</title>
+<style>
+html,body{margin:0;padding:0;background:transparent;overflow:hidden}#score{width:1920px;transform-origin:0 0}
+/* The shadow belongs to the notation. The exported PNG stays transparent. */
+#score svg{filter:drop-shadow(0 1px 1.1px rgba(0,0,0,.95)) drop-shadow(1px 0 0 rgba(0,0,0,.85)) drop-shadow(-1px 0 0 rgba(0,0,0,.85))}
+</style><div id="score"></div>
+<script src="/alphaTab.js"></script>
+<script>
+window.evidence={finished:false,errors:[],chunks:[]};
+(async()=>{
+ const config=await(await fetch('/config')).json();window.config=config;
+ const api=window.api=new alphaTab.AlphaTabApi(document.querySelector('#score'),{
+  core:{fontDirectory:'/fonts/',useWorkers:false,enableLazyLoading:false,includeNoteBounds:true},
+  display:{layoutMode:'Horizontal',scale:config.scale,barCountPerPartial:4,padding:[42,20,42,20],resources:{mainGlyphColor:'#ffffff',secondaryGlyphColor:'#ffffff',staffLineColor:'#e7e7e7',barSeparatorColor:'#ffffff',barNumberColor:'#dedede',scoreInfoColor:'#ffffff'}},
+  notation:{rhythmMode:'ShowWithBars',elements:{scoreTitle:false,scoreSubTitle:false,scoreArtist:false,scoreAlbum:false,scoreWords:false,scoreMusic:false,scoreWordsAndMusic:false,scoreCopyright:false,guitarTuning:false,trackNames:false,chordDiagrams:false}},
+  player:{enablePlayer:false}
+ });
+ api.error.on(e=>evidence.errors.push(String(e)));
+ api.renderer.partialRenderFinished.on(e=>{if(e.firstMasterBarIndex>=0)evidence.chunks.push({firstBar:e.firstMasterBarIndex+1,lastBar:e.lastMasterBarIndex+1,x:e.x,y:e.y,width:e.width,height:e.height,svg:e.renderResult})});
+ api.renderFinished.on(()=>{evidence.finished=true;});
+ const data=await(await fetch('/score')).arrayBuffer();
+ const score=alphaTab.importer.ScoreLoader.loadScoreFromBytes(new Uint8Array(data));
+ if(!score.tracks[config.track])throw Error('Selected track index does not exist');
+ if(score.tracks[config.track].staves.some(s=>s.isPercussion||s.stringTuning.tunings.length===0))throw Error('Select a fretted instrument track with string tuning');
+ for(const staff of score.tracks[config.track].staves){staff.showStandardNotation=false;staff.showTablature=true;}
+ api.renderScore(score,[config.track]);
+})().catch(e=>evidence.errors.push(String(e)));
+</script></html>

@@ -4,7 +4,7 @@
 
 把 PDF／图片中的五线谱、六线谱与鼓谱，整理成可编辑、可播放、可核对的 **Guitar Pro** 谱文件的模块化 Agent Skills。
 
-覆盖源谱检查、识谱录入、节奏校订、鼓轨处理、格式导出和最终验谱。每个 skill 独立描述输入、操作和交付证据；按需加载，不需要一次读完全部内容。默认用 **alphaTab** 验谱，按交付需要增加 TuxGuitar 兼容检查。
+覆盖源谱检查、识谱录入、节奏校订、鼓轨处理、吉他编配、格式导出、最终验谱和透明滚动谱视频。每个 skill 独立描述输入、操作和交付证据；按需加载，不需要一次读完全部内容。默认用 **alphaTab** 验谱，按交付需要增加 TuxGuitar 兼容检查。
 
 这是一套可复用的工作方法和小工具。复杂扫描件、特殊字体和演奏技法仍需要模型或人工识别；本仓库没有声称可以把任意 PDF 一键准确转换为 Guitar Pro。
 
@@ -16,8 +16,10 @@
 | [score-transcribe](skills/score-transcribe/SKILL.md) | 录入音高、弦品、声部、反复、延音和技法 | 带原谱依据的中间记录 |
 | [score-rhythm-audit](skills/score-rhythm-audit/SKILL.md) | 检查拍号、三连音、跨声部对齐与相似错误 | 节奏报告、经原谱核对的修正 |
 | [score-percussion](skills/score-percussion/SKILL.md) | 识别鼓件、处理鼓延音、诊断空轨或无声 | 鼓件映射、GPIF 审计与可选补丁 |
+| [score-arrange](skills/score-arrange/SKILL.md) | 按整小节主音优先或约定的补空模式合并吉他，保留原轨并验收 | 新编配轨、逐小节来源、差异记录 |
 | [score-export](skills/score-export/SKILL.md) | 选择 `.gp`／`.gp5` 等格式，保留信息并回读 | 导出文件、格式损失记录 |
 | [score-verify](skills/score-verify/SKILL.md) | 用 alphaTab 检查结构、渲染和播放，再比对原谱 | 分层验证报告、预览与交付清单 |
+| [score-video](skills/score-video/SKILL.md) | 将选定 GP 轨道独立生成为透明、连续横向滚动的谱面视频 | 带 alpha 的 MOV、时间轴与编码报告 |
 
 Guitar Pro 是产品正式名称；`.gp` 与 `.gp5` 是不同代际的文件格式，不是修改扩展名就能互换。MusicXML 与 MIDI 可作为辅助交付，MIDI 不保存完整谱面和指法。格式选择见 [score-export](skills/score-export/SKILL.md)。
 
@@ -36,7 +38,9 @@ cd guitar-pro-skills
 
 > 请读取 `score-source-inspect`，检查这份乐队总谱。保留所有轨道，列出不确定项。随后按需要使用其余 skills，输出 Guitar Pro 文件。用 alphaTab 验谱；如需 TuxGuitar 兼容，请另列兼容检查结果。
 
-已有谱文件的问题可以直接进入相应 skill：节奏不齐用 `score-rhythm-audit`，鼓没声音用 `score-percussion`，最终交付用 `score-verify`。
+已有谱文件的问题可以直接进入相应 skill：节奏不齐用 `score-rhythm-audit`，鼓没声音用 `score-percussion`，将已有主音／节奏吉他编成单吉他用 `score-arrange`，最终交付用 `score-verify`。
+
+编配规则由演奏需求决定：若选择“整小节主音优先”，主音轨在该小节只要有任何音符（含闷音、延音和倚音），就保留整小节及其中休止；只有主音全小节无音符时才用节奏轨。它与在主音空隙中补节奏是两种不同模式。新增轨应逐小节核对来源，并检查原有乐队轨道、跨小节滑音／延音和目标软件的静音状态。
 
 ## 可执行工具
 
@@ -90,6 +94,20 @@ python -m http.server 8765 --bind 127.0.0.1
 
 鼓轨 GPIF 审计、可选补丁和支持范围见 [score-percussion](skills/score-percussion/SKILL.md)。补丁只处理经过确认的格式兼容问题；不能补出原谱中尚未识别的音符。
 
+### 透明滚动谱视频
+
+`score-video` 从已有 GP 选择轨道，通过 alphaTab 横向渲染、节拍坐标与播放时间轴、Pillow 逐帧合成和 FFmpeg 编码，生成静音的 ProRes 4444 透明 MOV。谱面连续经过固定播放线，起点为首拍，默认没有片头或倒数；无需 iMovie、其他剪辑软件或播放器录屏。
+
+先按 [score-video](skills/score-video/SKILL.md) 安装该 skill 的 Node／Python 依赖、Playwright 浏览器和 FFmpeg，再在仓库根目录执行：
+
+```sh
+node skills/score-video/scripts/render_score.cjs --input input/score.gp --track 0 --output output/tiles
+python skills/score-video/scripts/encode_overlay.py output/tiles/manifest.json output/overlay.mov
+python skills/score-video/scripts/verify_overlay.py output/overlay.mov output/tiles/manifest.json
+```
+
+轨道索引从 0 开始；默认 1920 宽、60 FPS，画面高度来自渲染结果。支持范围和透明通道验证见 [视频说明](skills/score-video/references/video-formats.md)。未支持的反复／跳转、摇摆、倚音或多声部时间轴必须明确报错，不能套用固定小节时长。透明文件应解码检查 alpha；绿幕 MP4 只是可选的剪辑兼容衍生物。与真人演奏视频合成时，还需要对齐起点并检查速度漂移。
+
 ## 完整流程与验收
 
 ```mermaid
@@ -101,6 +119,7 @@ flowchart LR
     D --> E
     E --> F[alphaTab 验谱]
     F --> G[原谱对照与交付]
+    G -->|按需| H[透明滚动谱视频]
     F -->|发现差异| B
 ```
 
@@ -115,6 +134,9 @@ python -m pip install -r requirements-dev.txt
 npm --prefix skills/score-verify ci
 python -m unittest discover -s tests -p 'test_*.py'
 node --test tests/test_alphatab.cjs
+npm --prefix skills/score-video ci
+npm --prefix skills/score-video test
+python -m unittest discover -s skills/score-video/tests -p 'test_*.py'
 python tools/check_repository.py
 ```
 

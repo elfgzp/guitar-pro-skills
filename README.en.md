@@ -6,9 +6,9 @@ Modular Agent Skills for turning PDF or image-based staff notation, tablature,
 and drum notation into editable, playable, verifiable **Guitar Pro** files.
 
 The collection covers source inspection, transcription, rhythm correction,
-percussion, export, and final verification. Load only the skills needed for the
-task. **alphaTab is the default verifier**, with optional TuxGuitar compatibility
-checks when required for delivery.
+percussion, guitar arrangement, export, final verification, and transparent
+scrolling score videos. Load only the skills needed for the task. **alphaTab is the
+default verifier**, with optional TuxGuitar compatibility checks when required.
 
 These are reusable procedures and focused utilities. Difficult scans, custom
 fonts, and performance techniques still require visual interpretation. This
@@ -22,8 +22,10 @@ repository does not promise accurate, one-click conversion of arbitrary PDFs.
 | [score-transcribe](skills/score-transcribe/SKILL.md) | Pitches, fingering, voices, repeats, ties, techniques | Source-linked intermediate records |
 | [score-rhythm-audit](skills/score-rhythm-audit/SKILL.md) | Meter, tuplets, voice alignment, related errors | Timing report and source-reviewed corrections |
 | [score-percussion](skills/score-percussion/SKILL.md) | Drum identities, ties, missing or silent drums | Drum map, GPIF audit and optional patch |
+| [score-arrange](skills/score-arrange/SKILL.md) | Whole-bar lead priority or agreed gap filling, with source-track preservation | Derived part, per-bar provenance, change ledger |
 | [score-export](skills/score-export/SKILL.md) | Format choice, preservation, import round trips | Exported scores and loss ledger |
 | [score-verify](skills/score-verify/SKILL.md) | alphaTab structure, rendering, playback, source checks | Layered evidence, preview, delivery manifest |
+| [score-video](skills/score-video/SKILL.md) | Independently render a selected GP track as a transparent, continuously scrolling video | Alpha MOV, timeline and encode report |
 
 Guitar Pro is the product name. `.gp` and `.gp5` identify different format
 generations; changing the extension does not convert them. MusicXML and MIDI
@@ -56,7 +58,15 @@ Example request:
 > required.
 
 For an existing score, start directly with the relevant skill: rhythm problems,
-silent drums, or final verification do not require restarting the whole workflow.
+silent drums, arrangement of existing lead/rhythm guitars, or final verification
+do not require restarting the whole workflow.
+
+Arrangement policy follows the intended performance. With **whole-bar lead
+priority**, any lead note (including dead notes, ties and grace notes) selects the
+entire lead bar and its rests. Use rhythm only when that lead bar has no notes.
+Filling rests inside a lead phrase is a different policy. Check every selected
+bar against its source, preserve the existing band parts, and verify cross-bar
+ties/slides and the target player's actual mute state.
 
 ## Executable utilities
 
@@ -129,6 +139,31 @@ The optional GPIF percussion auditor/patcher is documented in
 [score-percussion](skills/score-percussion/SKILL.md). It handles confirmed format
 compatibility problems; it cannot reconstruct notes missing from transcription.
 
+### Transparent scrolling score video
+
+`score-video` combines alphaTab horizontal notation, beat bounds and a playback
+timeline, Pillow frame composition, and FFmpeg encoding to create a silent
+ProRes 4444 MOV with alpha. The notation scrolls beneath a fixed playhead, starting
+at the first score beat with no default title card or count-in. No iMovie, other
+video editor, player GUI or screen recording is required.
+
+Install the skill's Node/Python dependencies, Playwright browser and FFmpeg as
+explained in [score-video](skills/score-video/SKILL.md), then run from the repository
+root:
+
+```sh
+node skills/score-video/scripts/render_score.cjs --input input/score.gp --track 0 --output output/tiles
+python skills/score-video/scripts/encode_overlay.py output/tiles/manifest.json output/overlay.mov
+python skills/score-video/scripts/verify_overlay.py output/overlay.mov output/tiles/manifest.json
+```
+
+Track indices are zero-based. Defaults are 1920 pixels wide and 60 FPS; height
+comes from the rendered notation. See [video formats and checks](skills/score-video/references/video-formats.md)
+for scope. Unsupported repeat/jump, swing, grace or multiple-voice timelines must
+fail explicitly instead of using a fixed bar duration. Validate decoded alpha;
+a green-screen MP4 is only an optional editor-compatibility derivative. Combining
+with a live performance also requires start alignment and checks for tempo drift.
+
 ## Workflow and acceptance
 
 ```mermaid
@@ -140,6 +175,7 @@ flowchart LR
     D --> E
     E --> F[Verify in alphaTab]
     F --> G[Compare with source and deliver]
+    G -->|Optional| H[Transparent scrolling video]
     F -->|Differences found| B
 ```
 
@@ -159,6 +195,9 @@ python -m pip install -r requirements-dev.txt
 npm --prefix skills/score-verify ci
 python -m unittest discover -s tests -p 'test_*.py'
 node --test tests/test_alphatab.cjs
+npm --prefix skills/score-video ci
+npm --prefix skills/score-video test
+python -m unittest discover -s skills/score-video/tests -p 'test_*.py'
 python tools/check_repository.py
 ```
 

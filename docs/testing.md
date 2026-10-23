@@ -48,6 +48,17 @@ from the automated results.
 | A small grace fret slides into the main note | Preserve grace identity/order at the notated onset without adding an ordinary timed beat |
 | A slide points at the next same-fret tied segment | Inspect the printed sustained note and final segment; inspect pitch-bend playback, not only attack counts |
 | Exported slides pass internal checks | Compare an independent source inventory and explicit coverage; zero flags cannot establish zero source slides |
+| Whole-bar lead priority; a lead bar begins with rests and has a late dead-note slide | Select the entire lead bar, keep its rests and dead-note slide, and find other bars where an older gap-fill policy added rhythm |
+| The lead has only a tied continuation or grace note | Treat it as content even if no ordinary new MIDI attack is generated |
+| A lead bar appears empty but carries a bar-repeat or unison instruction | Resolve the source instruction before selecting the rhythm bar |
+| Switching source tracks leaves a cross-bar tie or slide without its intended endpoint | Report the boundary conflict; do not attach it to an unrelated next note or silently add attacks |
+| A new part renders, but the band includes percussion compatibility fields and multiple part views | Preserve original musical/container metadata, update track-dependent views and compare all original tracks |
+| GP marks source guitars muted, but the target player ignores those flags | Check actual imported state and document manual audition muting; do not claim mute-state compatibility |
+| A requested transparent overlay contains a checkerboard or opaque black background | Decode pixels to verify alpha and keep the baked preview separate from the transparent master |
+| An overlay uses correct note positions but constant seconds per bar across a meter or tempo change | Derive time from ticks and tempo events, then compare boundary times independently |
+| A rendered score contains a repeat, jump, swing, grace or multiple voices beyond the timeline implementation | Reject with located unsupported features rather than silently generate a plausible but wrong clock |
+| A horizontal render splits across tiles near a slide or tie | Preserve the common coordinate space and inspect a sequence across the seam for lost marks or visual jumps |
+| The generated video matches GP timing but drifts from a performance recording | Report score timing separately and require measured performance alignment |
 | CLI passes, but source/audio were not checked | Report structural evidence only; mark source and audible playback not-run |
 
 ## Important limits
@@ -94,3 +105,48 @@ source reference, rather than inferring completeness from exported flags. A
 separate grace-slide regression failed before grace identity was added. These
 synthetic cases include native GP export/reimport. They do not establish that a
 user-supplied reference was actually reviewed or that audio was heard.
+
+## Arrangement guidance verification
+
+`score-arrange` is a procedure, with a native GP reference for conditional use;
+it does not bundle another parser or writer. Its whole-bar policy, source-switch
+connections and container-preservation decisions are covered by the behavior
+scenarios above, rather than wording-matching tests. Syntax and local links are
+checked by repository hygiene validation. A future executable arranger should
+use synthetic scores to prove these invariants before being shipped.
+
+## Video verification boundaries
+
+`score-video` separates GP parsing, horizontal rendering, playback timing, frame
+composition and encoding. Exercise each executable stage on original synthetic
+notation, including timing changes and rejected unsupported constructs. Validate
+that the prototype and full encode cannot be confused and that the input is
+unchanged. Record the tests actually run; documentation scenarios alone are not
+an automated pass.
+
+A full video check includes decoded RGBA samples over multiple backgrounds,
+start/end coverage, notation techniques and tile seams, plus independently
+checked score event times. Codec metadata alone cannot prove transparency, and
+video duration alone cannot prove intermediate synchronization. A silent video
+requires no soundbank and is not audible-playback evidence. Editor import and
+alignment to a recorded performance are separate, optional checks.
+
+The video unit suites exercise alpha-bearing frame composition, blank/opaque
+tile rejection, unequal timing intervals, input/output preservation, path safety,
+and explicit rejection of unsupported score constructs. They run in CI without
+a browser or encoder. Run a separate local browser/FFmpeg smoke test for the
+complete pipeline:
+
+```sh
+# From skills/score-video, after installing its dependencies and Chromium:
+mkdir -p output
+node scripts/make_demo.cjs output/demo.gp
+node scripts/render_score.cjs --input output/demo.gp --track 0 --output output/tiles
+python scripts/encode_overlay.py output/tiles/manifest.json output/demo.mov --fps 24
+python scripts/verify_overlay.py output/demo.mov output/tiles/manifest.json
+```
+
+This original two-bar fixture changes from 4/4 at 120 BPM to 3/4 at 90 BPM,
+includes a tuplet and a rest, and lasts exactly four seconds. A 24 FPS export
+must contain 96 frames. This complete route was exercised locally; CI unit
+checks do not claim to repeat the browser and codec verification.

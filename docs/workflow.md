@@ -1,7 +1,7 @@
 # 从源谱到可交付 Guitar Pro / Source-to-score workflow
 
-本页负责连接六个 skill。每个 skill 内的说明和工具仍可独立使用。
-This page connects the six skills; each skill remains independently usable.
+本页负责连接八个 skill。每个 skill 内的说明和工具仍可独立使用。
+This page connects the eight skills; each skill remains independently usable.
 
 ## 1. 建立边界 / Establish scope
 
@@ -73,7 +73,23 @@ audio. Avoid skipping directly to audio-device troubleshooting.
 
 **交接 / Handoff:** 分数节奏校验、源谱确认的修正、每鼓件的独立音符与敲击数。
 
-## 5. 导出并回读 / Export and reimport
+## 5. 按需编配 / Arrange when requested
+
+已有乐队总谱需要单吉他版本时，用 `score-arrange` 明确整小节选轨或小节内补空
+策略。整小节主音优先时，主音的休止也是该小节的一部分；闷音、延音与倚音均
+计为内容。记录每小节来源，核对切换处的滑音／延音，并保留原轨。
+
+When arranging existing band parts, use `score-arrange` to establish whole-bar
+selection or gap filling. In whole-bar lead priority, preserve the selected lead
+bar's rests; dead notes, tied continuations and grace notes all count as content.
+Record every bar's provenance, inspect connections at source switches and retain
+the original parts.
+
+**交接 / Handoff:** 编配规则、新轨名称、逐小节来源、允许的改动、原轨保留证据。
+Arrangement rule, track name, per-bar provenance, permitted changes and evidence
+that original tracks were retained.
+
+## 6. 导出并回读 / Export and reimport
 
 用 `score-export` 选择实际支持的编码器，写入新文件后回读。保留原始输入。
 对每个目标格式检查轨道、弦品、音高、时值、延音、鼓件和技法；格式能力不同
@@ -86,7 +102,7 @@ mistake through a round trip.
 
 **交接 / Handoff:** 输出文件、哈希、工具版本、语义比较结果、格式限制。
 
-## 6. 分层验谱和交付 / Verify and deliver
+## 7. 分层验谱和交付 / Verify and deliver
 
 用 `score-verify` 先跑 alphaTab 结构与播放事件检查，再查看全曲渲染和关键段
 试听；最后对照原谱。局部发现问题后回到相应环节。目标要求 TuxGuitar 时，
@@ -113,3 +129,29 @@ target-version compatibility check when TuxGuitar is required.
 Use `pass / fail / not-run / partial`; unperformed work is not a pass. Deliver
 clearly named final files, optional interchange formats, and limitations so users
 can identify the verified version.
+
+## 8. 按需生成滚动谱视频 / Render a video when requested
+
+用 `score-video` 独立读取指定 GP 轨道，生成横向连续谱面和来自 GP 播放事件的
+时间轴，再编码带 alpha 的静音视频。它不依赖剪辑软件或播放器录屏，也不改变
+源谱。先做短片验证字体、跨小节技法、透明通道和滚动接缝，再生成完整范围。
+
+Use `score-video` to render a selected GP track in continuous horizontal layout,
+map GP playback events to notation coordinates, and encode a silent alpha video.
+The workflow uses no editing application or player screen capture and preserves
+the source score. Prototype fonts, cross-bar techniques, transparency and tile
+seams before encoding the full requested range.
+
+时间轴支持范围须明确，未实现的反复／跳转、摇摆、倚音或多声部情况应报错；
+不能把导出成功当作节奏正确。视频主文件、可选预览与绿幕衍生物须区分命名。
+与演奏录影同步需另行对齐起点并检查漂移。
+
+Declare the timeline's supported constructs and reject unimplemented repeats,
+jumps, swing, grace or multiple-voice cases. Successful encoding alone does not
+prove timing correctness. Name the master, optional preview and chroma-key
+derivative distinctly. Alignment to recorded performance is a separate check.
+
+**交接 / Handoff:** 透明视频、源谱哈希、轨道／尺寸／帧率、时间原点、时间轴与
+编码报告、解码 alpha 证据、已检查范围及限制。
+Transparent master, source hash, track/dimensions/FPS, timing origin, timeline and
+encode reports, decoded-alpha evidence, checked ranges and limitations.

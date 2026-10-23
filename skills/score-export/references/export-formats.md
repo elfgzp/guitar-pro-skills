@@ -67,6 +67,23 @@ types before repairing endpoint lookup: a boolean slide flag cannot distinguish
 a connected slide from an open-ended slide-out. Changing serialization order
 does not bypass an application's mutually exclusive note-effect model.
 
+## Adding a derived track to an existing band file
+
+Preserve original tracks and opaque instrument/compatibility metadata unless the
+requested arrangement changes them. A general import/export cycle can lose fields
+its model does not represent. For a direct native GP edit, clone and remap the
+new track's complete object graph and update master-bar, part and layout references;
+track-count-dependent configuration may live outside GPIF. Reimport both the band
+view and the new individual part. Do not assume binary layouts are identical
+across format versions.
+
+Declare allowed changes such as adding one part and muting its source guitars for
+audition. Compare every original track against the source file, excluding only
+those explicit changes. Check the target player's actual mute/solo state: some
+TuxGuitar native GP import paths ignore `PlaybackState`. Preserve the music and
+provide manual audition instructions when the installed version does so. A saved
+mute field is not evidence that the target app honored it.
+
 ## Written pitch, tuning, and MusicXML
 
 A standard staff may show written pitch an octave away from sounding guitar or

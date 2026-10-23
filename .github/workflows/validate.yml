@@ -25,9 +25,15 @@ jobs:
         run: python -m pip install -r requirements-dev.txt
       - name: Install alphaTab
         run: npm --prefix skills/score-verify ci
+      - name: Install video tools
+        run: npm --prefix skills/score-video ci
       - name: Check skill packaging
         run: python tools/check_repository.py
       - name: Test Python utilities
         run: python -m unittest discover -s tests -p 'test_*.py'
       - name: Test alphaTab workflow
         run: node --test tests/test_alphatab.cjs
+      - name: Test video timeline and transparent frame composition
+        run: python -m unittest discover -s skills/score-video/tests -p 'test_*.py'
+      - name: Test video supported score boundaries
+        run: npm --prefix skills/score-video test

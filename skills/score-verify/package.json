@@ -1,0 +1,16 @@
+{
+  "name": "score-verify-tools",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local alphaTab score structure and MIDI evidence tools",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test tests/test_alphatab.cjs"
+  },
+  "dependencies": {
+    "@coderline/alphatab": "1.8.4"
+  }
+}

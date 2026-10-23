@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Local score verification</title>
+<style>
+body{font:16px system-ui,sans-serif;color:#17212b;margin:24px;background:#f6f8fa}h1{font-size:24px}label{display:block;margin:12px 0}button,select,input{font:inherit}button{margin-right:8px;padding:6px 12px}section{background:white;padding:16px;margin:16px 0;border:1px solid #d8dee4;border-radius:8px}pre{white-space:pre-wrap;overflow-wrap:anywhere}#score{background:white;min-height:200px}textarea{width:100%;min-height:70px}small{color:#52606d}
+</style>
+<script src="../node_modules/@coderline/alphatab/dist/alphaTab.js"></script>
+</head>
+<body>
+<h1>Local score verification</h1>
+<p>Select a score from your computer. Score and SoundFont bytes remain in this page; this viewer has no upload endpoint or CDN.</p>
+<small>Serve this skill directory or its parent with a local HTTP server after <code>npm ci</code>. Opening this HTML with <code>file:</code> may prevent fonts or audio workers from loading.</small>
+<section>
+<label>Score <input id="file" type="file" accept=".gp,.gp3,.gp4,.gp5,.gpx,.xml,.musicxml,.mxl"></label>
+<label>Tracks <select id="tracks"><option value="all">All tracks</option></select></label>
+<label>Optional local SoundFont <input id="soundfont" type="file" accept=".sf2,.sf3"></label>
+<button id="play" disabled>Play / pause</button><button id="stop" disabled>Stop</button>
+<p id="status" role="status">Waiting for a score.</p>
+<pre id="details"></pre>
+</section>
+<section>
+<label><input id="visual" type="checkbox"> I inspected the full selected range, including the beginning, boundaries and ending.</label>
+<label><input id="audio" type="checkbox"> I listened to the selected tracks and checked attacks, sustained ties and the ending.</label>
+<label>Source comparison notes (page, bar, staff, expected versus observed)<textarea id="source" placeholder="Leave empty when no source comparison was performed."></textarea></label>
+<button id="download" disabled>Download review evidence</button>
+<p>Rendering and player readiness are recorded separately. Neither automatically marks visual, audible or source review as passed.</p>
+</section>
+<div id="score"></div>
+<script>
+ 'use strict';
+const el=id=>document.getElementById(id);
+const state={file:null,sha256:null,parse:'not_checked',render:'not_checked',svgSections:0,selectedTracks:[],soundFontLoaded:false,errors:[]};
+let score=null,api=null,loadGeneration=0;
+function details(){el('details').textContent=JSON.stringify({alphaTab:window.alphaTab?.meta.version,...state},null,2);}
+function disablePlayer(){el('play').disabled=true;el('stop').disabled=true;}
+function playerAvailability(){const ready=state.soundFontLoaded&&api?.isReadyForPlayback;el('play').disabled=!ready;el('stop').disabled=!ready;}
+function error(value){const message=value.message||String(value);state.errors.push(message);el('status').textContent='Error: '+message;details();}
+function resetReview(){el('visual').checked=false;el('audio').checked=false;el('source').value='';}
+function evidence(){return{schemaVersion:1,alphaTab:alphaTab.meta.version,...state,visual:{renderStatus:state.render,manualReview:el('visual').checked},audio:{soundFontLoaded:state.soundFontLoaded,manualListening:el('audio').checked},source:{notes:el('source').value,status:el('source').value.trim()?'manual_notes':'not_checked'}};}
+function clearPreviousScore(name){
+  if(api)api.destroy();api=null;score=null;
+  el('score').replaceChildren();el('tracks').replaceChildren(new Option('All tracks','all'));el('tracks').disabled=true;
+  el('download').disabled=true;el('soundfont').disabled=true;el('soundfont').value='';disablePlayer();resetReview();
+  Object.assign(state,{file:name,sha256:null,parse:'not_checked',render:'not_checked',svgSections:0,selectedTracks:[],soundFontLoaded:false,errors:[]});details();
+}
+function createApi(generation){
+  const asset='../node_modules/@coderline/alphatab/dist/';
+  const instance=new alphaTab.AlphaTabApi(el('score'),{core:{engine:'svg',fontDirectory:new URL(asset+'font/',location.href).href,scriptFile:new URL(asset+'alphaTab.js',location.href).href,useWorkers:false,enableLazyLoading:false},player:{enablePlayer:true,soundFont:null}});
+  const current=()=>generation===loadGeneration&&api===instance&&state.parse==='parsed';
+  instance.error.on(value=>{if(!current())return;if(state.render==='rendering')state.render='failed';state.soundFontLoaded=false;disablePlayer();error(value);});
+  instance.postRenderFinished.on(()=>{if(!current()||!score)return;state.render='rendered';state.svgSections=el('score').querySelectorAll('svg').length;el('status').textContent='Rendered '+state.selectedTracks.length+' track(s), '+score.masterBars.length+' bars. Inspect the score below.';details();});
+  instance.playerReady.on(()=>{if(current())playerAvailability();});
+  instance.soundFontLoaded.on(()=>{if(!current())return;state.soundFontLoaded=true;playerAvailability();details();});
+  return instance;
+}
+async function loadScoreBytes(bytes,name){
+  const generation=++loadGeneration;clearPreviousScore(name);el('status').textContent='Parsing local score...';
+  let parsed;
+  try{
+    const data=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes),digest=await crypto.subtle.digest('SHA-256',data);
+    if(generation!==loadGeneration)return;
+    state.sha256=Array.from(new Uint8Array(digest),n=>n.toString(16).padStart(2,'0')).join('');
+    parsed=alphaTab.importer.ScoreLoader.loadScoreFromBytes(data);
+  }catch(value){if(generation!==loadGeneration)return;state.parse='failed';error(value);return;}
+  if(generation!==loadGeneration)return;
+  score=parsed;state.parse='parsed';state.selectedTracks=score.tracks.map(t=>t.index);
+  for(const track of score.tracks)el('tracks').add(new Option(track.name,String(track.index)));
+  el('tracks').disabled=false;state.render='rendering';
+  try{api=createApi(generation);api.renderScore(score,state.selectedTracks);el('download').disabled=false;el('soundfont').disabled=false;details();}
+  catch(value){state.render='failed';error(value);}
+}
+if(!window.alphaTab){el('status').textContent='alphaTab is not installed. Run npm ci in this skill directory, then reload.';}
+else{
+  el('tracks').disabled=true;el('soundfont').disabled=true;
+  el('file').addEventListener('change',async event=>{const file=event.target.files[0];if(file)await loadScoreBytes(await file.arrayBuffer(),file.name);});
+  el('tracks').addEventListener('change',()=>{if(!score||!api||state.parse!=='parsed')return;resetReview();state.selectedTracks=el('tracks').value==='all'?score.tracks.map(t=>t.index):[Number(el('tracks').value)];state.render='rendering';api.renderScore(score,state.selectedTracks);details();});
+  el('soundfont').addEventListener('change',async event=>{
+    const file=event.target.files[0],instance=api,generation=loadGeneration;if(!file||!instance)return;
+    state.soundFontLoaded=false;el('audio').checked=false;disablePlayer();details();
+    try{const bytes=new Uint8Array(await file.arrayBuffer());if(generation===loadGeneration&&api===instance)instance.loadSoundFont(bytes);}
+    catch(value){if(generation===loadGeneration){state.soundFontLoaded=false;disablePlayer();error(value);}}
+  });
+  el('play').addEventListener('click',()=>api?.playPause());el('stop').addEventListener('click',()=>api?.stop());
+  el('download').addEventListener('click',()=>{if(state.parse!=='parsed'||!score)return;const blob=new Blob([JSON.stringify(evidence(),null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='score-review-evidence.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
+  window.verificationViewer={get api(){return api;},state,loadScoreBytes,evidence};details();
+}
+</script>
+</body></html>

@@ -72,6 +72,14 @@ node --test tests/test_alphatab.cjs
 
 演示文件由代码生成，只含人工构造的短谱例。CLI 的结构检查与 MIDI 事件检查不能代替听音或对照原谱。
 
+检查滑音遗漏时，先从原谱独立记录滑音类型和逐音起止位置，再比较导出文件：
+
+```sh
+node skills/score-verify/scripts/audit_alphatab.cjs output/score.gp --expected-slides input/source-slides.json --json output/slide-report.json
+```
+
+清单格式见 [滑音验证](skills/score-verify/references/slides.md)。工具检查已声明范围内的遗漏、多余滑音和错误终点，支持跨小节、闷音起点、倚音和显式弦号；默认报告也会列出文件里已有的滑音。期望清单必须来自独立原谱核对，不能从待检查的 GP 自动生成，否则无法发现录入时已经漏掉的技法。识谱注意事项见 [滑音录入](skills/score-transcribe/references/slides.md)。
+
 本地浏览器预览：
 
 ```sh
@@ -110,7 +118,7 @@ node --test tests/test_alphatab.cjs
 python tools/check_repository.py
 ```
 
-测试覆盖原始问题对应的通用失败模式：同列休止与音符、分数节奏、变拍与弱起、鼓件索引与 MIDI 音高混淆、格式回读和验证结论的范围。实际覆盖边界见 [测试说明](docs/testing.md)。CI 运行相同的检查。
+测试覆盖原始问题对应的通用失败模式：同列休止与音符、分数节奏、变拍与弱起、鼓件索引与 MIDI 音高混淆、滑音遗漏／错误终点／倚音、格式回读和验证结论的范围。实际覆盖边界见 [测试说明](docs/testing.md)。CI 运行相同的检查。
 
 ## 可移植性与许可
 

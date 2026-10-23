@@ -27,6 +27,39 @@ and vocal syllables each need explicit representation. A text label is not the
 same as a playable technique. Report approximations instead of silently dropping
 or inventing them.
 
+## Slides, ties and grace notes
+
+Preserve technique type, affected note/string, and resolved endpoints through each
+format boundary. Incoming/outgoing and pick slides are open-ended; shift/legato
+slides have a destination. A dead-note origin has unknown pitch even if an encoder
+requires a numeric fret placeholder. Keep that distinction in the source model.
+
+In alphaTab 1.8.4, a shift/legato flag may resolve to the next note on the same
+string, including a same-fret tied continuation; an unresolved flag can disappear
+during model finishing. Inspect fresh-import endpoints, not only raw flag counts.
+When the source slide follows a sustained tied note, the effect may belong on its
+last encoded tie segment. A zero-interval target warrants source review. Compare
+pitch-bend playback events or audition the passage; NoteOn counts alone cannot
+prove a slide sounded.
+
+A GP5 grace transition can import as a separate alphaTab grace beat with a legato
+slide. Before-beat grace playback may start before the main note, including a
+negative local playback offset at a bar boundary. Use notated display onset and
+zero metric grace duration for structural comparisons, while retaining grace
+order/type. Do not force playback offsets into the ordinary rhythm grid. Verify
+grace playback durations separately; the pinned importer can normalize them.
+
+Headless checks of TuxGuitar 2.1.0 found its imported slide model retains a boolean
+slide rather than every GP slide type, and its MIDI path can omit effects attached
+to tied destinations. Its dead-note and slide setters are mutually exclusive:
+the exercised GP5 path cleared dead-note state, while the native GP path cleared
+the slide. The native GP grace importer could also shorten the preceding beat by
+reusing its duration object. Compare imported dead flags, techniques and durations
+as well as note counts. Keep the semantically correct primary file and report the
+tested compatibility loss. Do not add attacks, change source durations, or remove
+correct ties/dead-note markings to hide a player's limitation. Recheck these
+behaviors after upgrades.
+
 ## Written pitch, tuning, and MusicXML
 
 A standard staff may show written pitch an octave away from sounding guitar or

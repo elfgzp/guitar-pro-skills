@@ -6,6 +6,8 @@ Load the complete score before checking selected excerpts: ties and layout can d
 Review every intended track, meter and system boundary, dense passages and the final measure.
 Look for implausible percussion ledger lines, missing kit voices, invisible rests, displaced slashes,
 wrong clefs or octave notation, clipped tuplets and outgoing ties with no continuation.
+Inspect slide lines at bar/system boundaries, their connected strings, and small
+grace frets. Compare the rendered connections with a source-mark inventory.
 Count render errors and record the inspected ranges. An SVG being produced is only rendering evidence.
 
 ## Listening
@@ -14,6 +16,8 @@ Use a suitable SoundFont and verify the audio output device. Readiness or MIDI c
 Listen to each track alone, especially percussion, then listen to the ensemble.
 Check the beginning, all section transitions and ending. Compare attack placement, triplet swing,
 partial chord reattacks, sustained notes and the absence of a fresh attack at a tied ending.
+For slides, check pitch movement and destination attacks. Equal NoteOn counts do
+not prove that a pitch bend occurred or that shift and legato were preserved.
 If the requested player cannot run, say playback was not checked and provide the available event evidence.
 Use TuxGuitar or another application when compatibility is requested; keep its results separate from the primary player.
 

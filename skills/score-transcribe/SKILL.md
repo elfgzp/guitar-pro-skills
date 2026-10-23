@@ -40,6 +40,9 @@ engine. An existing source map is useful, but can be established within this tas
 
 Read [references/event-model.md](references/event-model.md) when designing the
 intermediate model or handling repeats, voices, ties, and uncertainty.
+For slide lines, small grace frets, or a reported missing technique, read
+[references/slides.md](references/slides.md) and inventory source endpoints before
+encoding effects. A nearby label alone does not identify the affected note.
 
 ## Resolve continuation and repetition
 

@@ -29,7 +29,7 @@ node scripts/audit_alphatab.cjs /path/to/score.gp --json /path/to/report.json
 
 Node 18 or newer is required. The lockfile pins alphaTab to the tested version.
 The CLI exits 0 for a structural pass, 1 for structural/MIDI errors and 2 for input/output errors.
-It refuses report paths that alias the score, including hard links and symbolic links.
+It refuses report paths that alias the score or reference input, including hard links and symbolic links.
 Reports are written through a temporary file and atomic rename.
 
 ## Check structure and generated MIDI
@@ -42,7 +42,8 @@ Read [references/checks.md](references/checks.md) when interpreting the JSON rep
 4. Check every tie destination, origin identity, time order and reciprocal link.
 5. Resolve percussion indices through the track's custom articulation table.
 6. Read actual generated MIDI NoteOn counts and pitches, including per-track percussion output.
-7. Investigate discrepancies before treating structural checks as passed.
+7. Inspect the per-note slide ledger, resolved endpoints and zero-interval warnings.
+8. Investigate discrepancies before treating structural checks as passed.
 
 Do not replace custom-kit indices with GM numbers merely because those numbers look familiar.
 Do not silently fix parser defects inside a verification report.
@@ -71,6 +72,10 @@ Verify printed durations, tuplets, rests, ties and repeat expansions independent
 For a chord, distinguish notes that reattack from notes that continue by ties.
 For rhythm slashes, check the printed tie arcs and TAB before deciding whether to rearticulate.
 Use explicit source corrections or reference fixtures where available; preserve unresolved observations.
+Inventory slide marks independently, including bar/system boundaries, dead notes,
+small grace frets and final tied segments. Read [references/slides.md](references/slides.md)
+for the reviewed-scope JSON format and `--expected-slides` comparison. It catches
+missing/extra slides and wrong endpoints; exported flags alone cannot reveal omissions.
 
 ## Deliver the result
 

@@ -52,13 +52,16 @@ because only one of its notes continues.
 1. Freshly reimport the output, not a retained pre-export model.
 2. Compare tracks, bars, meters, tempo, onsets, durations, and sounding pitches.
 3. Normalize percussion through its output articulation mapping.
-4. Compare dead notes, per-note tie links, lyric onsets, and attack counts separately.
+4. Compare dead notes, per-note tie links, slide types/endpoints, grace identity,
+   lyric onsets, and attack counts separately. Include cross-bar transitions.
 5. Render the complete score and inspect representative source passages.
 6. Generate playback MIDI or a short audio sample for audible-path verification.
 
 Full-score rendering catches issues that a first-page preview misses. Partial
 rendering may also need earlier tie origins; diagnose that boundary separately.
 Model-to-export equality proves preservation, not accuracy against the source.
+Compare a separately source-reviewed slide inventory too: successful imports and
+matching note counts cannot expose an effect missing from the original model.
 
 ## Optional target application check
 

@@ -26,7 +26,9 @@ stringed notes also keep their string identity. Percussion identity is its effec
 Time moves forward in notated measure order, and source/destination links must be reciprocal.
 Cross-voice or cross-staff ties can be intentional and are warnings requiring source inspection.
 A broken tie graph prevents MIDI generation, which might otherwise dereference missing origins or loop.
-These checks concern ties, not slurs, hammer-ons, slides or let-ring instructions.
+These checks concern ties, not slurs, hammer-ons or let-ring instructions.
+Slides have a separate endpoint ledger and optional source comparison; see
+[slides.md](slides.md). A missing slide requires an independent reference to detect.
 
 ## Percussion and MIDI
 
@@ -45,11 +47,12 @@ Generated events prove routing and attacks, not that an audio device or SoundFon
 
 ## CLI and errors
 
-`node scripts/audit_alphatab.cjs SCORE [--json REPORT.json]` prints its report as JSON.
+`node scripts/audit_alphatab.cjs SCORE [--json REPORT.json] [--expected-slides SOURCE-SLIDES.json]`
+prints its report as JSON. The optional source reference checks the declared ranges.
 Exit 0: parsed structure and MIDI checks passed. Exit 1: structural or MIDI checks failed.
 Exit 2: invalid arguments, unreadable input or report output failure.
 Output errors remain machine-readable on stdout; the source file is preserved.
-Do not use the report to overwrite an input score or an alias to it.
+Do not use the report to overwrite an input score/reference or an alias to either.
 
 The optional local viewer records file hash, selected tracks, rendering state and manual review notes.
 It uses installed local fonts and scripts, and reads selected files using the browser File API.

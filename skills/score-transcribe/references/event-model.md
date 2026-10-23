@@ -23,6 +23,10 @@ A track record can contain name, role, tuning, capo, string order, transposition
 and a percussion flag. A note can contain written pitch, sounding pitch, fret,
 string, instrument/articulation, tie origin, and techniques. A rest contains no
 notes. Unknown pitch or instrument is an uncertainty, not a normal default value.
+Store slide type and note-level endpoints, including cross-bar links and grace
+identity; dead-note slide origins retain unknown fret/pitch. A beat-wide text
+label cannot preserve those distinctions. See [slides.md](slides.md) when reading
+or repairing these connections.
 
 For percussion, describe the source instrument before converting to General MIDI
 or an editor's articulation ID. Verify whether an API numbers MIDI channels from

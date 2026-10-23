@@ -43,6 +43,13 @@ Retain voice timing, pitch/fingering, note-level ties, repeat provenance,
 techniques and lyrics, source locations, uncertainty, and corrections. A
 confidence score should reflect actual evidence, not an arbitrary certainty.
 
+滑音按音符记录类型与起止弦品，单独核对跨小节、倚音和闷音起点。原谱技法清单
+应独立于输出文件；没有滑音标记的导出文件也可能是识谱遗漏。
+
+Record slide type and per-note endpoints, reviewing bar boundaries, grace notes
+and dead-note origins. Keep a source-reviewed technique inventory independent of
+the export; an export without slide flags may reflect a transcription omission.
+
 **交接 / Handoff:** 可重复生成的录入数据、未解决项、明确的损失记录。
 
 ## 4. 校节奏与鼓轨 / Audit timing and percussion

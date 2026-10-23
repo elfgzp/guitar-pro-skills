@@ -15,7 +15,11 @@ not a claim that arbitrary PDF music can be transcribed automatically.
   non-destructive patching.
 - `tests/test_alphatab.cjs`: original generated notation, alphaTab parsing,
   structural validation, drum articulation resolution, tie/playback checks,
-  and malformed input behavior.
+  malformed input behavior, and the independently installable slide tests.
+- `skills/score-verify/tests/test_slides.cjs`: missing/extra slides despite unchanged
+  pitch and rhythm, wrong endpoints, cross-bar round trips, unknown dead-note
+  origins, open-ended types, grace identity, reference scope/tick units, unsafe
+  graphs, and reference-file preservation.
 - `tools/check_repository.py`: skill metadata, referenced file existence,
   self-contained resources, and common accidental private-path/secret patterns.
   Pattern scanning is a packaging aid, not a general secret-detection guarantee.
@@ -39,6 +43,11 @@ from the automated results.
 | Source shows a tie into a final chord | Preserve per-note continuation and verify that playback does not add attacks |
 | GPIF articulation index differs from GM pitch | Resolve through the track's articulation table; never treat the index as a MIDI number |
 | Both exports have the same note count | Compare pitches, onsets, durations and ties; do not infer semantic equivalence from counts |
+| A slide label lies between notes across a barline | Inspect line endpoints and the adjacent source system; do not depend on nearest-label distance |
+| A dead-note chord leads into fretted notes | Preserve unknown start pitch and connect only source-supported strings; do not apply a beat-wide flag |
+| A small grace fret slides into the main note | Preserve grace identity/order at the notated onset without adding an ordinary timed beat |
+| A slide points at the next same-fret tied segment | Inspect the printed sustained note and final segment; inspect pitch-bend playback, not only attack counts |
+| Exported slides pass internal checks | Compare an independent source inventory and explicit coverage; zero flags cannot establish zero source slides |
 | CLI passes, but source/audio were not checked | Report structural evidence only; mark source and audible playback not-run |
 
 ## Important limits
@@ -75,3 +84,13 @@ are cleared; the failed file receives no rendering evidence from the old one.
 These are repository/tool checks on synthetic inputs. They do not establish
 full-PDF transcription accuracy, audible playback, or TuxGuitar compatibility
 for an arbitrary score. Those require the task-specific steps in the skills.
+
+## Slide regression verification
+
+The slide tests were introduced against the earlier verifier: all ten initial
+cases failed, including a removed slide with unchanged note pitches and bar
+durations. The implementation adds a per-note ledger and independently supplied
+source reference, rather than inferring completeness from exported flags. A
+separate grace-slide regression failed before grace identity was added. These
+synthetic cases include native GP export/reimport. They do not establish that a
+user-supplied reference was actually reviewed or that audio was heard.

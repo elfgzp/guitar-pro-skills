@@ -173,6 +173,12 @@ fail explicitly instead of using a fixed bar duration. Validate decoded alpha;
 a green-screen MP4 is only an optional editor-compatibility derivative. Combining
 with a live performance also requires start alignment and checks for tempo drift.
 
+Each delivery includes a localized usage guide beside the videos, filled with
+the actual filenames, audio states, timing origin and sync landmarks. The
+[English output template](skills/score-video/assets/usage-guide.en.md) covers
+transparent overlays and optional iMovie green/blue-screen use. Editor-specific
+instructions apply only when relevant; generating the assets needs no editor.
+
 ## Workflow and acceptance
 
 ```mermaid

@@ -104,7 +104,14 @@ optional green-screen MP4 is a separately named derivative, never the master.
 - Confirm the source hash is unchanged and report selected track, FPS, dimensions,
   duration, timing origin, audio absence, limitations and checked ranges.
 
-Deliver the transparent master, a convenient preview and concise timing guidance.
+Deliver the transparent master, a convenient preview and a filled usage guide
+beside the assets: `使用说明.md` or a localized `USAGE.md`. Adapt the
+[Chinese template](assets/usage-guide.zh-CN.md) or [English template](assets/usage-guide.en.md).
+Replace every template field using actual artifacts, manifests and validation;
+use relative file links and omit ungenerated files or irrelevant editor sections.
+Include iMovie steps when delivering its green/blue-screen derivative; this is
+optional consumer guidance, never an asset-generation dependency. State actual
+audio, timing origin and editor-test scope; do not imply unperformed validation.
 Synchronization to a recorded performance needs a known start offset and possibly
 a measured tempo/alignment map; matching the GP tempo does not prove alignment to
 a human recording. Report source fidelity, video timing, alpha integrity and

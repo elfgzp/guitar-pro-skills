@@ -112,3 +112,13 @@ successful encode:
 These checks establish video timing and alpha integrity for the inspected scope.
 They do not establish that the GP transcription matches an original PDF, that a
 performance was heard, or that a particular editor preserved transparency.
+
+## Consumer handoff
+
+Write the localized usage guide alongside delivered files using the
+[Chinese](../assets/usage-guide.zh-CN.md) or [English](../assets/usage-guide.en.md)
+template. Fill metadata from actual outputs and replace filenames with relative
+links. Keep only supplied assets and applicable editor instructions; report audio
+content and any untested editor compatibility explicitly. The CLI tools export
+media and machine-readable reports; the skill authoring the delivery fills this
+guide. Optional iMovie instructions do not make iMovie a rendering dependency.
